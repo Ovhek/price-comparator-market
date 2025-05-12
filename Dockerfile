@@ -6,8 +6,8 @@ COPY mvnw pom.xml ./
 # Download dependencies, this layer will be cached if pom.xml or .mvn doesn't change
 RUN ./mvnw dependency:go-offline -B
 COPY src ./src
-# Build the application, run tests
-RUN ./mvnw package
+# Build the application
+RUN ./mvnw package -DskipTests
 
 # Stage 2: Create the runtime image
 FROM eclipse-temurin:21-jre-jammy

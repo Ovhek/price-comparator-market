@@ -9,11 +9,11 @@ services:
       MARIADB_USER: comparator_user
       MARIADB_PASSWORD: 123456
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mariadb_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u$$MARIADB_USER", "-p$$MARIADB_PASSWORD"]
+      test: "mariadb-admin ping -h localhost -u$$MARIADB_USER -p$$MARIADB_PASSWORD"
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,8 +29,8 @@ services:
       mariadb:
         condition: service_healthy
     ports:
-      - "8080:8080" # Application port
-      - "5005:5005" # Debug port (host:container)
+      - "8080:8080"
+      - "5005:5005"
     environment:
       SPRING_PROFILES_ACTIVE: dev
       SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb:3306/price_comparator_db
