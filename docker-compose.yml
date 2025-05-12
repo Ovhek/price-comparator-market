@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mariadb:
     image: mariadb:10.11
@@ -41,6 +39,11 @@ services:
       APP_CSV_INPUT_PATH: /data-input
     volumes:
       - ./src/main/data-input:/data-input
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./src
+          target: /app/src
 
 volumes:
   mariadb_data:
