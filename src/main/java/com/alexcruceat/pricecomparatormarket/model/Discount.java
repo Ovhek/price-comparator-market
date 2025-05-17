@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
@@ -20,9 +21,8 @@ import java.time.LocalDate;
 @ToString(callSuper = true)
 @Entity
 @Table(name = "discounts", uniqueConstraints = {
-        // One discount record per product-store-start_date.
-        @UniqueConstraint(name = "uk_discount_product_store_from_date",
-                columnNames = {"product_id", "store_id", "from_date"})
+        @UniqueConstraint(name = "uk_discount_product_store_from_date_pkg",
+                columnNames = {"product_id", "store_id", "from_date", "package_quantity", "package_unit"})
 })
 public class Discount extends AbstractEntity {
 
@@ -74,6 +74,22 @@ public class Discount extends AbstractEntity {
     @Column(name = "recorded_at_date", nullable = false)
     private LocalDate recordedAtDate;
 
+    /**
+     * The quantity of the product in the package to which this discount applies.
+     * From the discount CSV.
+     */
+    @NotNull(message = "Discount package quantity cannot be null.")
+    @Column(name = "package_quantity", nullable = false, precision = 10, scale = 3)
+    private BigDecimal packageQuantity;
+
+    /**
+     * The unit of measure for the package quantity to which this discount applies.
+     * From the discount CSV.
+     */
+    @NotNull(message = "Discount package unit cannot be null.")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "package_unit", nullable = false, length = 20)
+    private UnitOfMeasure packageUnit;
 
     /**
      * Constructs a new Discount.
