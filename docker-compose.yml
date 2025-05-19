@@ -36,9 +36,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb:3306/price_comparator_db
       SPRING_DATASOURCE_USERNAME: comparator_user
       SPRING_DATASOURCE_PASSWORD: 123456
-      APP_CSV_INPUT_PATH: /data-input
+      APP_CSV_INPUT_PATH: /data/data-input
+      APP_CSV_PROCESSED_PATH: /data/processed
     volumes:
-      - ./src/main/data-input:/data-input
+      - ./data:/data
     develop:
       watch:
         - action: sync+restart

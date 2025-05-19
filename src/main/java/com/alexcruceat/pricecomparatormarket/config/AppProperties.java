@@ -32,5 +32,11 @@ public class AppProperties {
         @NotBlank(message = "CSV input path cannot be blank")
         private String inputPath;
 
+        /**
+         * The output path (directory) where CSV files are expected to be moved.
+         * This path must be configured and cannot be blank.
+         */
+        @NotBlank(message = "CSV processed path cannot be blank")
+        private String processedPath;
     }
 }

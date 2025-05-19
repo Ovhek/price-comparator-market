@@ -117,7 +117,7 @@ public class CsvDataIngestionServiceImpl implements CsvDataIngestionService, App
                     log.warn("Unhandled CSV file type for file: {}", csvFilePath);
                     break;
             }
-            String processedPathConfig = appProperties.getCsv().getInputPath();
+            String processedPathConfig = appProperties.getCsv().getProcessedPath();
             if (processedPathConfig != null && !processedPathConfig.isBlank()) {
                 moveFileToProcessed(csvFilePath);
             }
@@ -203,7 +203,7 @@ public class CsvDataIngestionServiceImpl implements CsvDataIngestionService, App
      * @param sourceFile The file to move.
      */
     private void moveFileToProcessed(Path sourceFile) {
-        String processedPathConfig = appProperties.getCsv().getInputPath();
+        String processedPathConfig = appProperties.getCsv().getProcessedPath();
         if (processedPathConfig == null || processedPathConfig.isBlank()) {
             log.debug("Processed path not configured. File {} will not be moved.", sourceFile);
             return;

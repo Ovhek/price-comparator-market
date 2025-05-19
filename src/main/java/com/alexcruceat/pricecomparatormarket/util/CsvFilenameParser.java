@@ -21,7 +21,7 @@ public class CsvFilenameParser {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE; // yyyy-MM-dd
 
     private static final Pattern PRODUCT_PRICE_CSV_PATTERN = Pattern.compile("^([a-zA-Z0-9]+)_(\\d{4}-\\d{2}-\\d{2})\\.csv$");
-    private static final Pattern DISCOUNT_CSV_PATTERN = Pattern.compile("^([a-zA-Z0-9]+)_discount_(\\d{4}-\\d{2}-\\d{2})\\.csv$");
+    private static final Pattern DISCOUNT_CSV_PATTERN = Pattern.compile("^([a-zA-Z0-9]+)_discounts_(\\d{4}-\\d{2}-\\d{2})\\.csv$");
 
     /**
      * Represents the type of CSV file.
