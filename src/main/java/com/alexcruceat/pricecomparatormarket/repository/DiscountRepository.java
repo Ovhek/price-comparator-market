@@ -3,6 +3,7 @@ package com.alexcruceat.pricecomparatormarket.repository;
 import com.alexcruceat.pricecomparatormarket.model.Discount;
 import com.alexcruceat.pricecomparatormarket.model.Product;
 import com.alexcruceat.pricecomparatormarket.model.Store;
+import com.alexcruceat.pricecomparatormarket.model.UnitOfMeasure;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +31,24 @@ public interface DiscountRepository extends JpaRepository<Discount, Long> {
      * @return An {@link Optional} containing the found discount, or empty if not found.
      */
     Optional<Discount> findByProductAndStoreAndFromDate(Product product, Store store, LocalDate fromDate);
+
+    /**
+     * Finds a discount by the composite key fields.
+     *
+     * @param product         The product.
+     * @param store           The store.
+     * @param fromDate        The start date of the discount.
+     * @param packageQuantity The package quantity.
+     * @param packageUnit     The package unit.
+     * @return An {@link Optional} containing the found discount.
+     */
+    Optional<Discount> findByProductAndStoreAndFromDateAndPackageQuantityAndPackageUnit(
+            Product product,
+            Store store,
+            LocalDate fromDate,
+            BigDecimal packageQuantity,
+            UnitOfMeasure packageUnit
+    );
 
     /**
      * Finds a page of discounts that are currently active for a given date.

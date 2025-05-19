@@ -4,6 +4,7 @@ package com.alexcruceat.pricecomparatormarket.service.dto;
 import lombok.Builder;
 import lombok.Value;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
@@ -16,7 +17,7 @@ public class DiscountCsvRow {
     String productId;
     String productName;
     String brand;
-    String packageQuantity;
+    BigDecimal packageQuantity;
     String packageUnit;
     String productCategory;
     LocalDate fromDate;

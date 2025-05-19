@@ -101,12 +101,14 @@ public class Discount extends AbstractEntity {
      * @param toDate         The end date of the discount.
      * @param recordedAtDate The date this discount was recorded (from CSV filename).
      */
-    public Discount(Product product, Store store, Integer percentage, LocalDate fromDate, LocalDate toDate, LocalDate recordedAtDate) {
+    public Discount(Product product, Store store, Integer percentage, LocalDate fromDate, LocalDate toDate, LocalDate recordedAtDate, BigDecimal packageQuantity, UnitOfMeasure packageUnit) {
         this.product = product;
         this.store = store;
         this.percentage = percentage;
         this.fromDate = fromDate;
         this.toDate = toDate;
         this.recordedAtDate = recordedAtDate;
+        this.packageQuantity = packageQuantity;
+        this.packageUnit = packageUnit;
     }
 }

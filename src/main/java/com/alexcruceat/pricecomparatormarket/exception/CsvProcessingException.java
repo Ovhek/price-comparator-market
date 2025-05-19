@@ -19,4 +19,13 @@ public class CsvProcessingException extends RuntimeException {
     public CsvProcessingException(String message) {
         super(message);
     }
+
+    /**
+     * Constructs a new CsvProcessingException with the specified detail message ands cause.
+     * @param message the detail message.
+     * @param cause cause.
+     */
+    public CsvProcessingException(String message, Throwable cause) {
+        super(message,cause);
+    }
 }
