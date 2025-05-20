@@ -1,7 +1,6 @@
 package com.alexcruceat.pricecomparatormarket.service.impl;
 
 import com.alexcruceat.pricecomparatormarket.model.*;
-import com.alexcruceat.pricecomparatormarket.repository.PriceEntryRepository;
 import com.alexcruceat.pricecomparatormarket.service.*;
 import com.alexcruceat.pricecomparatormarket.service.dto.ProductPriceCsvRow;
 import lombok.RequiredArgsConstructor;
@@ -57,7 +56,6 @@ public class ProductDataHandlerServiceImpl implements ProductDataHandlerService 
             product = productService.save(product); // Save and re-assign
         }
 
-        Optional<PriceEntry> existingPriceEntryOpt = priceEntryService.findByProductAndStoreAndEntryDate(product, store, entryDate);
         UnitOfMeasure unit = UnitOfMeasure.fromString(priceData.getPackageUnit());
 
         if (unit == UnitOfMeasure.UNKNOWN &&
@@ -68,24 +66,15 @@ public class ProductDataHandlerServiceImpl implements ProductDataHandlerService 
                     priceData.getProductName(), store.getName(), priceData.getPackageUnit());
         }
 
-        PriceEntry existingPriceEntry;
-        if (existingPriceEntryOpt.isPresent()) {
-            existingPriceEntry = existingPriceEntryOpt.get();
-            log.debug("Updating existing PriceEntry for Product ID: {}, Store: {}, Date: {}. Old Price: {}, New Price: {}",
-                    product.getId(), store.getName(), entryDate, existingPriceEntry.getPrice(), priceData.getPrice());
-            existingPriceEntry.setPrice(priceData.getPrice());
-            existingPriceEntry.setCurrency(priceData.getCurrency());
-            existingPriceEntry.setPackageQuantity(priceData.getPackageQuantity());
-            existingPriceEntry.setPackageUnit(unit);
-            existingPriceEntry.setStoreProductId(priceData.getProductId());
-        } else {
-            existingPriceEntry = new PriceEntry(
-                    product, store, priceData.getProductId(), priceData.getPrice(), priceData.getCurrency(),
-                    priceData.getPackageQuantity(), unit, entryDate
-            );
-            log.debug("Creating new PriceEntry for Product ID: {}, Store: {}, Date: {}, Price: {}",
-                    product.getId(), store.getName(), entryDate, existingPriceEntry.getPrice());
-        }
-        priceEntryService.save(existingPriceEntry);
+        priceEntryService.saveOrUpdatePriceEntry(
+                product,
+                store,
+                entryDate,
+                priceData.getProductId(),
+                priceData.getPrice(),
+                priceData.getCurrency(),
+                priceData.getPackageQuantity(),
+                unit
+        );
     }
 }

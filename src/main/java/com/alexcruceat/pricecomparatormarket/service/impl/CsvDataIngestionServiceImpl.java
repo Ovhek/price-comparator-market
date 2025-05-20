@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -25,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
@@ -43,17 +45,20 @@ public class CsvDataIngestionServiceImpl implements CsvDataIngestionService, App
     private final DiscountDataHandlerService discountDataHandlerService;
     private final StoreService storeService;
     private CsvDataIngestionService self;
+    private final Environment springEnv;
 
     public CsvDataIngestionServiceImpl(AppProperties appProperties,
                                        CsvFileReaderService csvFileReaderService,
                                        StoreService storeService,
                                        ProductDataHandlerService productDataHandlerService,
-                                       DiscountDataHandlerService discountDataHandlerService) {
+                                       DiscountDataHandlerService discountDataHandlerService,
+                                       Environment springEnv) {
         this.appProperties = appProperties;
         this.csvFileReaderService = csvFileReaderService;
         this.storeService = storeService;
         this.productDataHandlerService = productDataHandlerService;
         this.discountDataHandlerService = discountDataHandlerService;
+        this.springEnv = springEnv;
     }
 
     @Autowired
@@ -235,9 +240,14 @@ public class CsvDataIngestionServiceImpl implements CsvDataIngestionService, App
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
+        // Check if 'test' profile is active
+        if (Arrays.asList(springEnv.getActiveProfiles()).contains("test")) {
+            log.info("TEST profile active. Skipping initial CSV data ingestion via ApplicationRunner.");
+            return;
+        }
         log.info("Application started. Initiating CSV data ingestion...");
         try {
-            ingestAllPendingCsvFiles();
+            ingestAllPendingCsvFiles(); // This will use the spied AppProperties in tests if called by the test
             log.info("Initial CSV data ingestion complete.");
         } catch (Exception e) {
             log.error("A critical error occurred during initial CSV data ingestion process. Application startup sequence might be affected.", e);

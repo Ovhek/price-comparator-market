@@ -12,7 +12,7 @@ import java.time.LocalDate;
  * Fields correspond to the columns in the CSV.
  */
 @Value
-@Builder
+@Builder(toBuilder = true)
 public class DiscountCsvRow {
     String productId;
     String productName;

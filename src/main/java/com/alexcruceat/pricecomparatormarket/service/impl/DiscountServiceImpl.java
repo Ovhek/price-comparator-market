@@ -46,24 +46,33 @@ public class DiscountServiceImpl implements DiscountService {
         Discount discountToSave;
         if (existingOpt.isPresent()) {
             discountToSave = existingOpt.get();
-            // Only update if new record is more recent or details differ
-            if (!discountToSave.getPercentage().equals(percentage) ||
-                    !discountToSave.getToDate().equals(toDate) ||
-                    recordedAtDate.isAfter(discountToSave.getRecordedAtDate()) ) {
+            // Rule 1: If incoming record's recordedAtDate is strictly older, do not update.
+            if (recordedAtDate.isBefore(discountToSave.getRecordedAtDate())) {
+                log.debug("Skipping update for existing Discount: incoming recordedAtDate ({}) is older than existing ({}). Product ID: {}, Store: {}, FromDate: {}, Pkg: {} {}",
+                        recordedAtDate, discountToSave.getRecordedAtDate(), product.getId(), store.getName(), fromDate, packageQuantity, packageUnit);
+                return discountToSave; // Return existing, do not save
+            }
 
-                log.debug("Updating existing Discount for Product ID: {}, Store: {}, FromDate: {}, Pkg: {} {}. Old %: {}, New %: {}. Old ToDate: {}, New ToDate: {}",
+            // Rule 2: If recordedAtDate is the same, only update if other critical fields have changed.
+            // If all relevant fields are identical, no need to save.
+            boolean detailsChanged = !discountToSave.getPercentage().equals(percentage) ||
+                    !discountToSave.getToDate().equals(toDate);
+
+            if (recordedAtDate.equals(discountToSave.getRecordedAtDate()) && !detailsChanged) {
+                log.debug("Skipping update for existing Discount: incoming recordedAtDate is same and other details are identical. Product ID: {}, Store: {}, FromDate: {}, Pkg: {} {}",
+                        product.getId(), store.getName(), fromDate, packageQuantity, packageUnit);
+                return discountToSave; // Data is identical for this date, return existing, do not save
+            }
+
+
+            log.debug("Updating existing Discount for Product ID: {}, Store: {}, FromDate: {}, Pkg: {} {}. Old %: {}, New %: {}. Old ToDate: {}, New ToDate: {}",
                         product.getId(), store.getName(), fromDate, packageQuantity, packageUnit,
                         discountToSave.getPercentage(), percentage,
                         discountToSave.getToDate(), toDate);
 
-                discountToSave.setPercentage(percentage);
-                discountToSave.setToDate(toDate);
-                discountToSave.setRecordedAtDate(recordedAtDate);
-            } else {
-                log.debug("Skipping update for existing Discount as new data is not different or newer. Product ID: {}, Store: {}, FromDate: {}, Pkg: {} {}",
-                        product.getId(), store.getName(), fromDate, packageQuantity, packageUnit);
-                return discountToSave; // Return existing if no update needed
-            }
+            discountToSave.setPercentage(percentage);
+            discountToSave.setToDate(toDate);
+            discountToSave.setRecordedAtDate(recordedAtDate);
         } else {
             discountToSave = new Discount(
                     product,
