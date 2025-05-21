@@ -236,6 +236,72 @@ public class DiscountServiceImpl implements DiscountService {
      * {@inheritDoc}
      */
     @Override
+    @Transactional(readOnly = true)
+    public Page<DiscountedProductDTO> findNewlyAddedDiscounts(LocalDate sinceDate, LocalDate referenceDateForPrices, Pageable pageable) {
+        Assert.notNull(sinceDate, "SinceDate cannot be null for finding new discounts.");
+        Assert.notNull(referenceDateForPrices, "ReferenceDateForPrices cannot be null.");
+        Assert.notNull(pageable, "Pageable cannot be null.");
+
+        // 1. Fetch discounts recorded on or after 'sinceDate'.
+        // We might want to ensure a default sort by recordedAtDate descending if not specified by client.
+        PageRequest queryPageable;
+        if (pageable.getSort().isSorted()) {
+            // Use the client-provided sort
+            queryPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
+        } else {
+            // Default sort for new discounts: most recent first, then by product name
+            queryPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                    Sort.by(Sort.Direction.DESC, "recordedAtDate")
+                            .and(Sort.by(Sort.Direction.ASC, "product.name")));
+        }
+
+
+        Page<Discount> newDiscountsPage = discountRepository.findByRecordedAtDateAfter(sinceDate.minusDays(1), queryPageable);
+        List<DiscountedProductDTO> enrichedNewDiscountDTOs = new ArrayList<>();
+
+        for (Discount discount : newDiscountsPage.getContent()) {
+            // 2. For each new discount, find its original price to calculate the discounted price.
+            // Use referenceDateForPrices to get the relevant original price.
+            Optional<PriceEntry> priceEntryOpt = priceEntryRepository
+                    .findFirstByProductAndStoreAndPackageQuantityAndPackageUnitAndEntryDateLessThanEqualOrderByEntryDateDesc(
+                            discount.getProduct(),
+                            discount.getStore(),
+                            discount.getPackageQuantity(),
+                            discount.getPackageUnit(),
+                            referenceDateForPrices
+                    );
+
+            if (priceEntryOpt.isPresent()) {
+                PriceEntry originalPriceEntry = priceEntryOpt.get();
+                BigDecimal originalPrice = originalPriceEntry.getPrice();
+                BigDecimal discountMultiplier = BigDecimal.ONE.subtract(
+                        BigDecimal.valueOf(discount.getPercentage()).divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP)
+                );
+                BigDecimal discountedPrice = originalPrice.multiply(discountMultiplier).setScale(2, RoundingMode.HALF_UP);
+
+                enrichedNewDiscountDTOs.add(DiscountedProductDTO.builder()
+                        .product(productMapper.toDTO(discount.getProduct()))
+                        .store(storeMapper.toDTO(discount.getStore()))
+                        .discountPercentage(discount.getPercentage())
+                        .originalPrice(originalPrice)
+                        .discountedPrice(discountedPrice)
+                        .packageQuantity(discount.getPackageQuantity())
+                        .packageUnit(discount.getPackageUnit())
+                        .discountEndDate(discount.getToDate()) // Also include when the discount ends
+                        .build());
+            } else {
+                log.warn("Could not find an original price entry for newly added discount ID: {} (Product: {}, Store: {} using reference date {}). Skipping this discount from 'new discounts' list.",
+                        discount.getId(), discount.getProduct().getName(), discount.getStore().getName(), referenceDateForPrices);
+            }
+        }
+        // Return a new Page with the enriched DTOs and original pagination info from newDiscountsPage
+        return new PageImpl<>(enrichedNewDiscountDTOs, pageable, newDiscountsPage.getTotalElements());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Discount save(Discount discount) {
         Assert.notNull(discount, "Discount to save must not be null.");
         log.debug("Saving Discount: {}", discount);

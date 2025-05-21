@@ -98,5 +98,18 @@ public interface DiscountService {
      */
     Page<DiscountedProductDTO> findBestActiveDiscounts(LocalDate referenceDate, Pageable pageable);
 
+    /**
+     * Finds discounts that were newly recorded (added to the system) on or after a specified date.
+     * The results are typically paginated and can be sorted (e.g., by recordedAtDate descending).
+     * This method also enriches the discount information with original and discounted prices.
+     *
+     * @param sinceDate The date from which to consider discounts as "new" (inclusive).
+     * @param referenceDateForPrices The date to use for fetching the "original price" for calculating discounted price.
+     *                               Typically, this would be the current date or the discount's start date.
+     * @param pageable  Pagination and sorting information.
+     * @return A {@link Page} of {@link DiscountedProductDTO}s representing newly added discounts.
+     */
+    Page<DiscountedProductDTO> findNewlyAddedDiscounts(LocalDate sinceDate, LocalDate referenceDateForPrices, Pageable pageable);
+
     Discount save(Discount discount);
 }

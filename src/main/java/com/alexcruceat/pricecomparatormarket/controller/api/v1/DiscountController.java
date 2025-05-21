@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -64,6 +65,41 @@ public class DiscountController {
 
         Page<DiscountedProductDTO> discountedProductPage = discountService.findBestActiveDiscounts(referenceDate, pageable);
         PageResponseDTO<DiscountedProductDTO> response = new PageResponseDTO<>(discountedProductPage);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Retrieves a paginated list of newly added discounts.
+     * "Newly added" is determined by discounts recorded on or after the 'sinceDate'.
+     *
+     * @param sinceDateOptional Optional. The date from which to consider discounts as "new" (inclusive).
+     *                          Defaults to 24 hours ago if not provided. Format: yyyy-MM-dd.
+     * @param pageable          Pagination and sorting parameters. Default sort is by recorded date descending.
+     * @return A {@link ResponseEntity} containing a {@link PageResponseDTO} of {@link DiscountedProductDTO}s.
+     */
+    @Operation(summary = "List newly added discounts",
+            description = "Returns a paginated list of discounts that were recorded (added to the system) " +
+                    "on or after the 'sinceDate' (defaults to 24 hours ago).")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved list of new discounts.",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = PageResponseDTODiscountedProductWrapper.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request parameters (e.g., invalid date format).")
+    })
+    @GetMapping("/new")
+    public ResponseEntity<PageResponseDTO<DiscountedProductDTO>> getNewDiscounts(
+            @Parameter(description = "Date from which to fetch new discounts (yyyy-MM-dd). Defaults to 24 hours ago.")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Optional<LocalDate> sinceDateOptional,
+            @ParameterObject @PageableDefault(size = 10, sort = "recordedAtDate,desc") Pageable pageable) {
+
+        LocalDate sinceDate = sinceDateOptional.orElse(LocalDate.now().minusDays(1));
+        LocalDate referenceDateForPrices = LocalDate.now();
+
+        log.info("Request for new discounts since: {}, using price reference date: {}, pageable: {}", sinceDate, referenceDateForPrices, pageable);
+
+        Page<DiscountedProductDTO> newDiscountsPage = discountService.findNewlyAddedDiscounts(sinceDate, referenceDateForPrices, pageable);
+        PageResponseDTO<DiscountedProductDTO> response = new PageResponseDTO<>(newDiscountsPage);
 
         return ResponseEntity.ok(response);
     }
