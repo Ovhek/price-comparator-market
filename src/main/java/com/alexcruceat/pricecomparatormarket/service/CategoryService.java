@@ -2,6 +2,8 @@ package com.alexcruceat.pricecomparatormarket.service;
 
 import com.alexcruceat.pricecomparatormarket.model.Category;
 
+import java.util.Optional;
+
 /**
  * Service interface for managing {@link Category} entities.
  */
@@ -14,4 +16,11 @@ public interface CategoryService {
      * @throws IllegalArgumentException if the name is null or blank.
      */
     Category findOrCreateCategory(String name);
+
+    /**
+     * Tries to find a Category by id
+     * @param categoryId category ID
+     * @return Optional Category
+     */
+    Optional<Category> findById(Long categoryId);
 }

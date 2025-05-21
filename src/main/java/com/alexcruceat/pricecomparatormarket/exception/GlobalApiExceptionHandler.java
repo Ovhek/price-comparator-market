@@ -1,5 +1,7 @@
 package com.alexcruceat.pricecomparatormarket.exception;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -15,6 +17,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 /**
@@ -24,9 +27,17 @@ import java.util.stream.Collectors;
  * It extends {@link ResponseEntityExceptionHandler} to leverage its handling of standard Spring MVC exceptions.
  */
 @ControllerAdvice
+@Slf4j
 public class GlobalApiExceptionHandler extends ResponseEntityExceptionHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(GlobalApiExceptionHandler.class);
+    @Schema(description = "Standard error response format.")
+    public static class ErrorResponse {
+         @Schema(example = "2024-03-17T12:00:00Z") public java.time.LocalDateTime timestamp;
+         @Schema(example = "400") public int status;
+         @Schema(example = "Bad Request") public String error;
+         @Schema(example = "Invalid input") public String message;
+         @Schema(example = "/api/v1/products") public String path;
+    }
 
     /**
      * Handles {@link ResourceNotFoundException}.
@@ -51,7 +62,7 @@ public class GlobalApiExceptionHandler extends ResponseEntityExceptionHandler {
      * @param request The current web request.
      * @return A {@link ResponseEntity} containing the error details and HTTP status 400.
      */
-    @ExceptionHandler(InvalidInputException.class)
+    @ExceptionHandler({InvalidInputException.class, IllegalArgumentException.class, NoSuchElementException.class})
     public ResponseEntity<Object> handleInvalidInputException(
             InvalidInputException ex, WebRequest request) {
         log.warn("Invalid input: {}", ex.getMessage());

@@ -1,6 +1,7 @@
 package com.alexcruceat.pricecomparatormarket.service;
 
 import com.alexcruceat.pricecomparatormarket.model.Brand;
+import java.util.Optional;
 
 /**
  * Service interface for managing {@link Brand} entities.
@@ -14,4 +15,12 @@ public interface BrandService {
      * @throws IllegalArgumentException if the name is null or blank.
      */
     Brand findOrCreateBrand(String name);
+
+
+    /**
+     * Tries to get a Brand by ID
+     * @param brandId brand ID.
+     * @return an Optional of Brand.
+     */
+    Optional<Brand> findById(Long brandId);
 }

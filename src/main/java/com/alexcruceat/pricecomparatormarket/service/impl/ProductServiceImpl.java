@@ -1,9 +1,5 @@
 package com.alexcruceat.pricecomparatormarket.service.impl;
 
-import com.alexcruceat.pricecomparatormarket.dto.PricePointDTO;
-import com.alexcruceat.pricecomparatormarket.dto.ProductDTO;
-import com.alexcruceat.pricecomparatormarket.dto.ProductPriceHistoryDTO;
-import com.alexcruceat.pricecomparatormarket.exception.ResourceNotFoundException;
 import com.alexcruceat.pricecomparatormarket.mapper.PriceEntryMapper;
 import com.alexcruceat.pricecomparatormarket.mapper.ProductMapper;
 import com.alexcruceat.pricecomparatormarket.model.*;
@@ -21,8 +17,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -146,40 +140,5 @@ public class ProductServiceImpl implements ProductService {
         }
         productRepository.deleteById(id);
         log.info("Successfully deleted product with ID: {}", id);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @Transactional(readOnly = true,propagation = Propagation.SUPPORTS)
-    public ProductPriceHistoryDTO getProductPriceHistory(Product productArg, Optional<Store> storeArg, Optional<LocalDate> startDate, Optional<LocalDate> endDate) {
-        Assert.notNull(productArg.getId(), "Product ID cannot be null for price history.");
-
-        Product productDB = productRepository.findById(productArg.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + productArg.getId()));
-
-        ProductDTO productDTO = productMapper.toDTO(productDB);
-
-        LocalDate effectiveStartDate = startDate.orElse(LocalDate.MIN);
-        LocalDate effectiveEndDate = endDate.orElse(LocalDate.now());
-
-        List<PriceEntry> priceEntries;
-
-        if (storeArg.isPresent()) {
-            Store storeDB = storeService.findStoreById(storeArg.get().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Store not found with ID: " + storeArg.get().getId()));
-
-            priceEntries = priceEntryService.getPriceEntriesForProductAndStore(
-                    productDB.getId(), storeDB.getId(), effectiveStartDate, effectiveEndDate);
-        } else {
-            priceEntries = priceEntryService.getPriceEntriesForProduct(
-                    productDB.getId(), effectiveStartDate, effectiveEndDate);
-        }
-
-        List<PricePointDTO> pricePoints = priceEntryMapper.toPricePointDTOList(priceEntries);
-
-        return new ProductPriceHistoryDTO(productDTO, pricePoints);
-
     }
 }

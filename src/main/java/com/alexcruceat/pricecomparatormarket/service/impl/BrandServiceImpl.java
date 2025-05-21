@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.util.Optional;
+
 /**
  * Implementation of {@link BrandService}.
  */
@@ -33,5 +35,10 @@ public class BrandServiceImpl implements BrandService {
                     log.info("Brand not found, creating new brand: '{}'", trimmedName);
                     return brandRepository.save(new Brand(trimmedName));
                 });
+    }
+
+    @Override
+    public Optional<Brand> findById(Long brandId) {
+        return brandRepository.findById(brandId);
     }
 }

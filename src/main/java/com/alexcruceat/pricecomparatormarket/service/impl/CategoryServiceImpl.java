@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.util.Optional;
+
 /**
  * Implementation of {@link CategoryService}.
  */
@@ -32,5 +34,10 @@ public class CategoryServiceImpl implements CategoryService {
                     log.info("Category not found, creating new category: '{}'", trimmedName);
                     return categoryRepository.save(new Category(trimmedName));
                 });
+    }
+
+    @Override
+    public Optional<Category> findById(Long categoryId) {
+        return categoryRepository.findById(categoryId);
     }
 }
