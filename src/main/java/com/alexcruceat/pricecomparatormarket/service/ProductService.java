@@ -1,5 +1,6 @@
 package com.alexcruceat.pricecomparatormarket.service;
 
+import com.alexcruceat.pricecomparatormarket.dto.ProductValueDTO;
 import com.alexcruceat.pricecomparatormarket.model.Brand;
 import com.alexcruceat.pricecomparatormarket.model.Category;
 import com.alexcruceat.pricecomparatormarket.model.Product;
@@ -7,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 /**
@@ -71,5 +73,25 @@ public interface ProductService {
      * @param id The ID of the product to delete.
      */
     void deleteById(Long id);
+
+    /**
+     * Finds products matching the given criteria and enriches them with value-per-unit information.
+     * This method will look at the most recent price entry for each product in each store (or a specific store).
+     *
+     * @param name       Optional product name filter.
+     * @param categoryId Optional category ID filter.
+     * @param brandId    Optional brand ID filter.
+     * @param storeIdOpt Optional store ID filter. If present, only considers prices from this store.
+     *                   If absent, might consider best price across stores or latest from any store (needs definition).
+     *                   For simplicity, let's assume if storeId is absent, it processes products and their latest prices
+     *                   from any store they are found in.
+     * @param referenceDate The date to consider for "current" prices.
+     * @param pageable   Pagination and sorting information.
+     * @return A {@link Page} of {@link ProductValueDTO}s.
+     */
+    Page<ProductValueDTO> findProductsWithValueAnalysis(
+            String name, Long categoryId, Long brandId, Optional<Long> storeIdOpt,
+            LocalDate referenceDate, Pageable pageable
+    );
 
 }

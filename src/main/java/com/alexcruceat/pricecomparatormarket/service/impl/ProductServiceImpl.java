@@ -1,22 +1,33 @@
 package com.alexcruceat.pricecomparatormarket.service.impl;
 
+import com.alexcruceat.pricecomparatormarket.dto.ProductValueDTO;
 import com.alexcruceat.pricecomparatormarket.mapper.PriceEntryMapper;
 import com.alexcruceat.pricecomparatormarket.mapper.ProductMapper;
+import com.alexcruceat.pricecomparatormarket.mapper.StoreMapper;
 import com.alexcruceat.pricecomparatormarket.model.*;
 import com.alexcruceat.pricecomparatormarket.repository.ProductRepository;
 import com.alexcruceat.pricecomparatormarket.service.PriceEntryService;
 import com.alexcruceat.pricecomparatormarket.service.ProductService;
 import com.alexcruceat.pricecomparatormarket.service.StoreService;
+import com.alexcruceat.pricecomparatormarket.service.specification.ProductSpecification;
+import com.alexcruceat.pricecomparatormarket.util.UnitConverterUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -29,9 +40,8 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
     private final PriceEntryService priceEntryService;
-    private final StoreService storeService;
     private final ProductMapper productMapper;
-    private final PriceEntryMapper priceEntryMapper;
+    private final StoreMapper storeMapper;
 
     /**
      * {@inheritDoc}
@@ -140,5 +150,164 @@ public class ProductServiceImpl implements ProductService {
         }
         productRepository.deleteById(id);
         log.info("Successfully deleted product with ID: {}", id);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ProductValueDTO> findProductsWithValueAnalysis(
+            String name, Long categoryId, Long brandId, Optional<Long> storeIdOpt,
+            LocalDate referenceDate, Pageable pageable) {
+
+        Assert.notNull(referenceDate, "Reference date cannot be null.");
+        Assert.notNull(pageable, "Pageable cannot be null.");
+
+        // 1. Create specification for initial product filtering
+        Specification<Product> productSpec = ProductSpecification.byCriteria(name, categoryId, brandId, null);
+
+        // 2. Fetch ALL products matching the specification.
+        // We don't use pageable here for fetching products because sorting might be on DTO-calculated fields.
+        List<Product> allMatchingProducts = productRepository.findAll(productSpec);
+
+        List<ProductValueDTO> productValueDTOs = new ArrayList<>();
+
+        // 3. For each product, find relevant price entries and create DTOs
+        for (Product product : allMatchingProducts) {
+            List<PriceEntry> relevantPriceEntries = new ArrayList<>();
+            if (storeIdOpt.isPresent()) {
+                Optional<PriceEntry> entryOpt = priceEntryService
+                        .findFirstByProduct_IdAndStore_IdAndEntryDateLessThanEqualOrderByEntryDateDesc(
+                                product.getId(), storeIdOpt.get(), referenceDate);
+                entryOpt.ifPresent(relevantPriceEntries::add);
+            } else {
+                // If no specific store, try to get price on referenceDate from any store
+                List<PriceEntry> entriesOnDate = priceEntryService.findByProductIdAndEntryDate(
+                        product.getId(), referenceDate);
+                if (!entriesOnDate.isEmpty()) {
+                    relevantPriceEntries.addAll(entriesOnDate);
+                } else {
+                    // If no price on exact referenceDate, find latest before it for each store
+                    List<PriceEntry> latestPerStore = priceEntryService.findLatestPriceEntriesPerStoreForProduct(
+                            product.getId(), referenceDate);
+                    if (!latestPerStore.isEmpty()) {
+                        relevantPriceEntries.addAll(latestPerStore);
+                    } else {
+                        // Fallback: If still no entries, try the absolute latest for the product from any store
+                        Optional<PriceEntry> latestAnyStore = priceEntryService
+                                .findFirstByProductAndEntryDateLessThanEqualOrderByEntryDateDesc(product, referenceDate);
+                        latestAnyStore.ifPresent(relevantPriceEntries::add);
+                    }
+                }
+            }
+
+            if (relevantPriceEntries.isEmpty()) {
+                log.debug("No relevant price entry found for product ID {} (Name: '{}') around date {} (Store filter: {}). Adding with no price info.",
+                        product.getId(), product.getName(), referenceDate, storeIdOpt.map(String::valueOf).orElse("Any"));
+                productValueDTOs.add(ProductValueDTO.builder()
+                        .product(productMapper.toDTO(product))
+                        .normalizable(false)
+                        .build());
+            } else {
+                for (PriceEntry entry : relevantPriceEntries) {
+                    UnitConverterUtil.PricePerStandardUnit ppsu = UnitConverterUtil.calculatePricePerStandardUnit(
+                            entry.getPrice(), entry.getPackageQuantity(), entry.getPackageUnit()
+                    );
+
+                    ProductValueDTO.ProductValueDTOBuilder builder = ProductValueDTO.builder()
+                            .product(productMapper.toDTO(product))
+                            .store(storeMapper.toDTO(entry.getStore()))
+                            .currentPrice(entry.getPrice())
+                            .currency(entry.getCurrency())
+                            .packageQuantity(entry.getPackageQuantity())
+                            .packageUnit(entry.getPackageUnit());
+
+                    if (ppsu != null) {
+                        builder.pricePerStandardUnit(ppsu.getPrice())
+                                .standardUnit(ppsu.getUnit())
+                                .normalizable(true);
+                    } else {
+                        builder.normalizable(false);
+                    }
+                    productValueDTOs.add(builder.build());
+                }
+            }
+        }
+
+        // 4. Sort the collected ProductValueDTOs
+        Sort sort = pageable.getSort();
+        if (sort.isSorted()) {
+            Comparator<ProductValueDTO> finalComparator = buildProductValueDTOComparator(sort);
+            if (finalComparator != null) {
+                productValueDTOs.sort(finalComparator);
+            }
+        }
+
+        // 5. Manual Pagination
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), productValueDTOs.size());
+
+        List<ProductValueDTO> pageContent;
+        if (start > end || start >= productValueDTOs.size()) { // Check if start is out of bounds
+            pageContent = List.of();
+        } else {
+            pageContent = productValueDTOs.subList(start, end);
+        }
+
+        return new PageImpl<>(pageContent, pageable, productValueDTOs.size());
+    }
+
+    /**
+     * Builds a comparator for {@link ProductValueDTO} based on a {@link Sort} object.
+     * Supports sorting by "pricePerStandardUnit", "product.name", and "currentPrice".
+     *
+     * @param sort The {@link Sort} object specifying sorting criteria.
+     * @return A {@link Comparator<ProductValueDTO>} or null if no supported sort properties are found.
+     */
+    private Comparator<ProductValueDTO> buildProductValueDTOComparator(Sort sort) {
+        Comparator<ProductValueDTO> finalComparator = null;
+
+        for (Sort.Order order : sort) {
+            Comparator<ProductValueDTO> currentComparator = null;
+            switch (order.getProperty()) {
+                case "pricePerStandardUnit":
+                    // Products with no pricePerStandardUnit (not normalizable or no price) should go last
+                    currentComparator = Comparator.comparing(
+                            ProductValueDTO::getPricePerStandardUnit,
+                            Comparator.nullsLast(BigDecimal::compareTo)
+                    );
+                    break;
+                case "product.name":
+                    currentComparator = Comparator.comparing(
+                            dto -> dto.getProduct().getName(),
+                            Comparator.nullsLast(String::compareToIgnoreCase)
+                    );
+                    break;
+                case "currentPrice":
+                    currentComparator = Comparator.comparing(
+                            ProductValueDTO::getCurrentPrice,
+                            Comparator.nullsLast(BigDecimal::compareTo)
+                    );
+                    break;
+                // Add more cases for other sortable properties of ProductValueDTO if needed
+                // e.g., "store.name", "product.brand.name"
+                default:
+                    log.warn("Unsupported sort property for ProductValueDTO: {}", order.getProperty());
+                    break;
+            }
+
+            if (currentComparator != null) {
+                if (order.isDescending()) {
+                    currentComparator = currentComparator.reversed();
+                }
+                if (finalComparator == null) {
+                    finalComparator = currentComparator;
+                } else {
+                    finalComparator = finalComparator.thenComparing(currentComparator);
+                }
+            }
+        }
+        return finalComparator;
     }
 }

@@ -3,6 +3,7 @@ package com.alexcruceat.pricecomparatormarket.controller.api.v1;
 
 import com.alexcruceat.pricecomparatormarket.dto.PageResponseDTO;
 import com.alexcruceat.pricecomparatormarket.dto.ProductDTO;
+import com.alexcruceat.pricecomparatormarket.dto.ProductValueDTO;
 import com.alexcruceat.pricecomparatormarket.exception.ResourceNotFoundException;
 import com.alexcruceat.pricecomparatormarket.mapper.ProductMapper;
 import com.alexcruceat.pricecomparatormarket.model.Product;
@@ -21,9 +22,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.Optional;
 
 /**
  * REST Controller for querying product information.
@@ -127,11 +132,61 @@ public class ProductController {
     }
 
     /**
+     * Retrieves a paginated list of products enriched with value-per-unit analysis.
+     * This helps identify best buys by normalizing prices to a standard unit (e.g., per KG/Litre).
+     *
+     * @param name        Optional filter for product name.
+     * @param categoryId  Optional filter for category ID.
+     * @param brandId     Optional filter for brand ID.
+     * @param storeId  Optional filter for store ID. If provided, analysis is for prices in this store.
+     * @param referenceDate Optional. The date to consider for current prices. Defaults to today.
+     * @param pageable    Pagination and sorting parameters.
+     * @return A {@link ResponseEntity} containing a {@link PageResponseDTO} of {@link ProductValueDTO}s.
+     */
+    @Operation(summary = "List products with value-per-unit analysis",
+            description = "Returns a paginated list of products, each enriched with its price per standard unit (e.g., per KG/Litre). " +
+                    "Useful for comparing value across different package sizes. Filters can be applied.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved products with value analysis.",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = PageResponseDTOProductValueWrapper.class)))
+    @ApiResponse(responseCode = "400", description = "Invalid request parameters.")
+    @GetMapping("/value-analysis")
+    public ResponseEntity<PageResponseDTO<ProductValueDTO>> listProductsWithValueAnalysis(
+            @Parameter(description = "Filter by product name (partial, case-insensitive match).")
+            @RequestParam(required = false) String name,
+            @Parameter(description = "Filter by category ID.")
+            @RequestParam(required = false) Long categoryId,
+            @Parameter(description = "Filter by brand ID.")
+            @RequestParam(required = false) Long brandId,
+            @Parameter(description = "Optional: Filter by store ID for price context.")
+            @RequestParam(required = false) Optional<Long> storeId,
+            @Parameter(description = "Reference date for current prices (yyyy-MM-dd). Defaults to today.")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Optional<LocalDate> referenceDate,
+            @ParameterObject @PageableDefault(size = 20, sort = "pricePerStandardUnit,asc") Pageable pageable) {
+
+        LocalDate effectiveReferenceDate = referenceDate.orElse(LocalDate.now());
+        log.info("Request for products with value analysis. Filters: name='{}', categoryId={}, brandId={}, storeId={}, refDate={}. Pageable: {}",
+                name, categoryId, brandId, storeId, effectiveReferenceDate, pageable);
+
+        Page<ProductValueDTO> productValuePage = productService.findProductsWithValueAnalysis(
+                name, categoryId, brandId, storeId, effectiveReferenceDate, pageable
+        );
+        PageResponseDTO<ProductValueDTO> response = new PageResponseDTO<>(productValuePage);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Inner static class used as a workaround for Swagger/OpenAPI documentation
      * to correctly represent the generic type {@code PageResponseDTO<ProductDTO>}.
      * This helps in generating a clear and accurate API specification.
      */
     @Schema(name = "ProductPageResponse", description = "Paginated response containing a list of products and pagination details.")
     private static class PageResponseDTOProductWrapper extends PageResponseDTO<ProductDTO> {}
+
+    /**
+     * Inner static class for Swagger documentation of PageResponseDTO<ProductValueDTO>.
+     */
+    @Schema(name = "ProductValuePageResponse", description = "Paginated response containing a list of products value and pagination details.")
+    private static class PageResponseDTOProductValueWrapper extends PageResponseDTO<ProductValueDTO> {}
 
 }

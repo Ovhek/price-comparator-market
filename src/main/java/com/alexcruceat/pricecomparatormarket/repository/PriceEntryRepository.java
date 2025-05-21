@@ -148,4 +148,45 @@ public interface PriceEntryRepository extends JpaRepository<PriceEntry, Long> {
     Optional<PriceEntry> findFirstByProductAndStoreAndPackageQuantityAndPackageUnitAndEntryDateLessThanEqualOrderByEntryDateDesc(
             Product product, Store store, BigDecimal packageQuantity, UnitOfMeasure packageUnit, LocalDate referenceDate
     );
+
+    /**
+     * Finds the most recent price entry for a given product in a specific store,
+     * on or before a specified reference date.
+     *
+     * @param productId     The ID of the product.
+     * @param storeId       The ID of the store.
+     * @param referenceDate The date to find the price on or before.
+     * @return Optional containing the most recent {@link PriceEntry} or empty if none found.
+     */
+    Optional<PriceEntry> findFirstByProduct_IdAndStore_IdAndEntryDateLessThanEqualOrderByEntryDateDesc(
+            Long productId, Long storeId, LocalDate referenceDate
+    );
+
+    /**
+     * Finds all price entries for a given product on a specific date across all stores.
+     * @param productId The ID of the product.
+     * @param entryDate The specific date.
+     * @return List of price entries.
+     */
+    List<PriceEntry> findByProductIdAndEntryDate(Long productId, LocalDate entryDate);
+
+    /**
+     * Finds the latest price entry for each store for a given product, on or before a reference date.
+     * This is a more complex query, often requiring a subquery or window functions if done purely in SQL/JPQL.
+     * For simplicity, this might fetch more data and then be filtered in Java, or be a native query.
+     * Let's define a simpler version for now that gets all entries for a product before a date.
+     * The service layer will then have to pick the latest per store.
+     */
+    @Query("SELECT pe FROM PriceEntry pe WHERE pe.product.id = :productId AND pe.entryDate <= :referenceDate ORDER BY pe.store.id ASC, pe.entryDate DESC")
+    List<PriceEntry> findLatestPriceEntriesPerStoreForProduct(@Param("productId") Long productId, @Param("referenceDate") LocalDate referenceDate);
+
+    /**
+     * Finds the most recent price entry for a given product across all stores,
+     * on or before a specified reference date.
+     *
+     * @param product       The product entity.
+     * @param referenceDate The date to find the price on or before.
+     * @return Optional containing the most recent {@link PriceEntry} or empty if none found.
+     */
+    Optional<PriceEntry> findFirstByProductAndEntryDateLessThanEqualOrderByEntryDateDesc(Product product, LocalDate referenceDate);
 }

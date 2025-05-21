@@ -15,8 +15,10 @@ import org.springframework.util.Assert;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of {@link PriceEntryService}.
@@ -124,5 +126,64 @@ public class PriceEntryServiceImpl implements PriceEntryService {
         Assert.notNull(endDate, "End date cannot be null.");
         Assert.isTrue(!endDate.isBefore(startDate), "End date must not be before start date.");
         return priceEntryRepository.findByProductIdAndEntryDateBetweenOrderByEntryDateAsc(productId, startDate, endDate);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Optional<PriceEntry> findFirstByProduct_IdAndStore_IdAndEntryDateLessThanEqualOrderByEntryDateDesc(Long productId, Long storeId, LocalDate referenceDate) {
+        Assert.notNull(productId, "Product ID cannot be null.");
+        Assert.notNull(storeId, "Store ID cannot be null.");
+        Assert.notNull(referenceDate, "Reference date cannot be null.");
+        return priceEntryRepository.findFirstByProduct_IdAndStore_IdAndEntryDateLessThanEqualOrderByEntryDateDesc(
+                productId, storeId, referenceDate
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<PriceEntry> findByProductIdAndEntryDate(Long productId, LocalDate entryDate) {
+        Assert.notNull(productId, "Product ID cannot be null.");
+        Assert.notNull(entryDate, "Entry date cannot be null.");
+        return priceEntryRepository.findByProductIdAndEntryDate(productId, entryDate);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<PriceEntry> findLatestPriceEntriesPerStoreForProduct(Long productId, LocalDate referenceDate) {
+        Assert.notNull(productId, "Product ID cannot be null.");
+        Assert.notNull(referenceDate, "Reference date cannot be null.");
+
+        List<PriceEntry> allEntries = priceEntryRepository.findLatestPriceEntriesPerStoreForProduct(productId, referenceDate);
+
+        // We need to pick the first entry for each store.
+        return allEntries.stream()
+                .collect(Collectors.groupingBy(
+                        pe -> pe.getStore().getId(),
+                        Collectors.maxBy(Comparator.comparing(PriceEntry::getEntryDate))
+                ))
+                .values().stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Optional<PriceEntry> findFirstByProductAndEntryDateLessThanEqualOrderByEntryDateDesc(Product product, LocalDate referenceDate) {
+        Assert.notNull(product, "Product cannot be null.");
+        Assert.notNull(referenceDate, "Reference date cannot be null.");
+        return priceEntryRepository.findFirstByProductAndEntryDateLessThanEqualOrderByEntryDateDesc(product, referenceDate);
     }
 }
