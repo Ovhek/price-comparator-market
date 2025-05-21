@@ -3,11 +3,13 @@ package com.alexcruceat.pricecomparatormarket.repository;
 import com.alexcruceat.pricecomparatormarket.model.PriceEntry;
 import com.alexcruceat.pricecomparatormarket.model.Product;
 import com.alexcruceat.pricecomparatormarket.model.Store;
+import com.alexcruceat.pricecomparatormarket.model.UnitOfMeasure;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -131,4 +133,19 @@ public interface PriceEntryRepository extends JpaRepository<PriceEntry, Long> {
             @Param("storeId") Long storeId, // Can be null
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
+
+    /**
+     * Finds the most recent price entry for a given product, store, package quantity, and package unit,
+     * on or before a specified reference date.
+     *
+     * @param product         The product.
+     * @param store           The store.
+     * @param packageQuantity The package quantity.
+     * @param packageUnit     The package unit.
+     * @param referenceDate   The date to find the price on or before.
+     * @return Optional containing the most recent {@link PriceEntry} or empty if none found.
+     */
+    Optional<PriceEntry> findFirstByProductAndStoreAndPackageQuantityAndPackageUnitAndEntryDateLessThanEqualOrderByEntryDateDesc(
+            Product product, Store store, BigDecimal packageQuantity, UnitOfMeasure packageUnit, LocalDate referenceDate
+    );
 }

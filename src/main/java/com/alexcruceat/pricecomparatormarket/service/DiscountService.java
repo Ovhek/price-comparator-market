@@ -1,6 +1,7 @@
 package com.alexcruceat.pricecomparatormarket.service;
 
 
+import com.alexcruceat.pricecomparatormarket.dto.DiscountedProductDTO;
 import com.alexcruceat.pricecomparatormarket.model.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -85,6 +86,17 @@ public interface DiscountService {
      * @return A {@link Page} of active discounts, ordered by percentage descending.
      */
     Page<Discount> findTopActiveDiscounts(LocalDate date, Pageable pageable);
+
+
+    /**
+     * Finds the best currently active discounts across all stores, ordered by discount percentage descending.
+     * "Best" is defined by the highest discount percentage.
+     *
+     * @param referenceDate The date for which to check "current" active discounts (e.g., LocalDate.now()).
+     * @param pageable      Pagination and sorting information. Note that primary sort will be by percentage.
+     * @return A {@link Page} of {@link DiscountedProductDTO}s representing the best deals.
+     */
+    Page<DiscountedProductDTO> findBestActiveDiscounts(LocalDate referenceDate, Pageable pageable);
 
     Discount save(Discount discount);
 }

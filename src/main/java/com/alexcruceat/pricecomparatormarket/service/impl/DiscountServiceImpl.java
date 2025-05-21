@@ -1,19 +1,24 @@
 package com.alexcruceat.pricecomparatormarket.service.impl;
 
+import com.alexcruceat.pricecomparatormarket.dto.DiscountedProductDTO;
+import com.alexcruceat.pricecomparatormarket.mapper.ProductMapper;
+import com.alexcruceat.pricecomparatormarket.mapper.StoreMapper;
 import com.alexcruceat.pricecomparatormarket.model.*;
 import com.alexcruceat.pricecomparatormarket.repository.DiscountRepository;
+import com.alexcruceat.pricecomparatormarket.repository.PriceEntryRepository;
 import com.alexcruceat.pricecomparatormarket.service.DiscountService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,6 +31,11 @@ import java.util.Optional;
 public class DiscountServiceImpl implements DiscountService {
 
     private final DiscountRepository discountRepository;
+    private final PriceEntryRepository priceEntryRepository;
+
+    private final ProductMapper productMapper;
+    private final StoreMapper storeMapper;
+
 
     /**
      * {@inheritDoc}
@@ -142,6 +152,84 @@ public class DiscountServiceImpl implements DiscountService {
         Assert.notNull(date, "Date cannot be null.");
         Assert.notNull(pageable, "Pageable cannot be null.");
         return discountRepository.findTopActiveDiscounts(date, pageable);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true) // This is a read operation
+    public Page<DiscountedProductDTO> findBestActiveDiscounts(LocalDate referenceDate, Pageable pageable) {
+        Assert.notNull(referenceDate, "Reference date cannot be null.");
+        Assert.notNull(pageable, "Pageable cannot be null.");
+
+        // 1. Fetch all discounts active on the referenceDate, sorted by percentage.
+        // The repository method findTopActiveDiscounts already sorts by percentage.
+        // We fetch all active discounts first, then apply pagination after enrichment.
+        // This is because original price fetching might filter out some discounts if price is not found.
+        // For large number of active discounts, this could be memory intensive.
+        // A more optimized way would be a complex DB query or iterative fetching.
+
+        Pageable unbounded;
+
+        if(pageable.getSort().isSorted()){
+            unbounded = PageRequest.of(0, Integer.MAX_VALUE, pageable.getSort().and(Sort.by(Sort.Direction.DESC, "percentage")));
+        } else {
+            unbounded = PageRequest.of(0, Integer.MAX_VALUE, Sort.by(Sort.Direction.DESC, "percentage"));
+        }
+
+        Page<Discount> activeDiscountsPage = discountRepository.findActiveDiscountsByDate(referenceDate, unbounded);
+        List<Discount> activeDiscounts = activeDiscountsPage.getContent();
+
+        List<DiscountedProductDTO> discountedProductDTOs = new ArrayList<>();
+
+        for (Discount discount : activeDiscounts) {
+            // 2. For each discount, find the most recent PriceEntry for that product/store/package
+            // on or before the discount's fromDate (or referenceDate, depending on definition of "original price").
+            // Let's assume "original price" is the latest available price for that item at that store.
+            // We need to match on product, store, packageQuantity, and packageUnit.
+            Optional<PriceEntry> priceEntryOpt = priceEntryRepository
+                    .findFirstByProductAndStoreAndPackageQuantityAndPackageUnitAndEntryDateLessThanEqualOrderByEntryDateDesc(
+                            discount.getProduct(),
+                            discount.getStore(),
+                            discount.getPackageQuantity(),
+                            discount.getPackageUnit(),
+                            referenceDate
+                    );
+
+            if (priceEntryOpt.isPresent()) {
+                PriceEntry originalPriceEntry = priceEntryOpt.get();
+                BigDecimal originalPrice = originalPriceEntry.getPrice();
+                BigDecimal discountMultiplier = BigDecimal.ONE.subtract(
+                        BigDecimal.valueOf(discount.getPercentage()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP)
+                );
+                BigDecimal discountedPrice = originalPrice.multiply(discountMultiplier).setScale(2, RoundingMode.HALF_UP);
+
+                discountedProductDTOs.add(DiscountedProductDTO.builder()
+                        .product(productMapper.toDTO(discount.getProduct()))
+                        .store(storeMapper.toDTO(discount.getStore()))
+                        .discountPercentage(discount.getPercentage())
+                        .originalPrice(originalPrice)
+                        .discountedPrice(discountedPrice)
+                        .packageQuantity(discount.getPackageQuantity())
+                        .packageUnit(discount.getPackageUnit())
+                        .discountEndDate(discount.getToDate())
+                        .build());
+            } else {
+                log.warn("Could not find a suitable original price entry for active discount ID: {} (Product: {}, Store: {}). Skipping this discount from 'best discounts' list.",
+                        discount.getId(), discount.getProduct().getName(), discount.getStore().getName());
+            }
+        }
+
+        // Manual pagination after enrichment and potential filtering
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), discountedProductDTOs.size());
+        List<DiscountedProductDTO> pageContent = List.of();
+        if (start <= end) {
+            pageContent = discountedProductDTOs.subList(start, end);
+        }
+
+        return new PageImpl<>(pageContent, pageable, discountedProductDTOs.size());
     }
 
     /**
