@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.util.Optional;
+
 /**
  * Implementation of {@link StoreService}.
  */
@@ -32,5 +34,14 @@ public class StoreServiceImpl implements StoreService {
                     log.info("Store not found, creating new store: '{}'", trimmedName);
                     return storeRepository.save(new Store(trimmedName));
                 });
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Optional<Store> findStoreById(Long id) {
+        Assert.notNull(id, "Store id must not be null.");
+        return storeRepository.findById(id);
     }
 }

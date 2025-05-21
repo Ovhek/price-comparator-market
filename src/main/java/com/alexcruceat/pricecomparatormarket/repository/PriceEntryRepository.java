@@ -38,17 +38,32 @@ public interface PriceEntryRepository extends JpaRepository<PriceEntry, Long> {
     List<PriceEntry> findByProductOrderByEntryDateDesc(Product product);
 
     /**
+     * Finds all price entries for a specific product and store within a given date range,
+     * ordered by entry date ascending.
+     *
+     * @param productId The ID of the product.
+     * @param storeId   The ID of the store.
+     * @param startDate The start date of the range (inclusive).
+     * @param endDate   The end date of the range (inclusive).
+     * @return A list of {@link PriceEntry} objects.
+     */
+    List<PriceEntry> findByProductIdAndStoreIdAndEntryDateBetweenOrderByEntryDateAsc(
+            Long productId,
+            Long storeId,
+            LocalDate startDate,
+            LocalDate endDate);
+
+    /**
      * Finds all price entries for a specific product within a given date range,
      * ordered by entry date ascending.
      *
      * @param productId The ID of the product.
      * @param startDate The start date of the range (inclusive).
      * @param endDate   The end date of the range (inclusive).
-     * @return A list of {@link PriceEntry} objects for the product within the date range.
+     * @return A list of {@link PriceEntry} objects.
      */
-    @Query("SELECT pe FROM PriceEntry pe WHERE pe.product.id = :productId AND pe.entryDate BETWEEN :startDate AND :endDate ORDER BY pe.entryDate ASC")
-    List<PriceEntry> findProductPriceHistoryInRange(
-            @Param("productId") Long productId,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate);
+    List<PriceEntry> findByProductIdAndEntryDateBetweenOrderByEntryDateAsc(
+            Long productId,
+            LocalDate startDate,
+            LocalDate endDate);
 }

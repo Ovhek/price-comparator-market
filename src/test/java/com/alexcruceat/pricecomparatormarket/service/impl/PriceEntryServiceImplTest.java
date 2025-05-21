@@ -180,12 +180,12 @@ class PriceEntryServiceImplTest {
         LocalDate startDate = LocalDate.of(2024, 1, 1);
         LocalDate endDate = LocalDate.of(2024, 1, 31);
         List<PriceEntry> entries = Collections.singletonList(new PriceEntry());
-        when(priceEntryRepositoryMock.findProductPriceHistoryInRange(productId, startDate, endDate)).thenReturn(entries);
+        when(priceEntryRepositoryMock.findByProductIdAndEntryDateBetweenOrderByEntryDateAsc(productId, startDate, endDate)).thenReturn(entries);
 
-        List<PriceEntry> result = priceEntryService.findProductPriceHistoryInRange(productId, startDate, endDate);
+        List<PriceEntry> result = priceEntryService.getPriceEntriesForProduct(productId, startDate, endDate);
 
         assertThat(result).isEqualTo(entries);
-        verify(priceEntryRepositoryMock).findProductPriceHistoryInRange(productId, startDate, endDate);
+        verify(priceEntryRepositoryMock).findByProductIdAndEntryDateBetweenOrderByEntryDateAsc(productId, startDate, endDate);
     }
 
     /**

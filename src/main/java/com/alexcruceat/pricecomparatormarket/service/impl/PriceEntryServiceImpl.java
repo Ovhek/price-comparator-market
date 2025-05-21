@@ -93,22 +93,36 @@ public class PriceEntryServiceImpl implements PriceEntryService {
      * {@inheritDoc}
      */
     @Override
-    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
-    public List<PriceEntry> findProductPriceHistoryInRange(Long productId, LocalDate startDate, LocalDate endDate) {
-        Assert.notNull(productId, "Product ID cannot be null.");
-        Assert.notNull(startDate, "Start date cannot be null.");
-        Assert.notNull(endDate, "End date cannot be null.");
-        Assert.isTrue(!endDate.isBefore(startDate), "End date must not be before start date.");
-        return priceEntryRepository.findProductPriceHistoryInRange(productId, startDate, endDate);
+    public PriceEntry save(PriceEntry newPriceEntry) {
+        Assert.notNull(newPriceEntry, "Product to save must not be null.");
+        log.debug("Saving Price Entry: {}", newPriceEntry);
+        return priceEntryRepository.save(newPriceEntry);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public PriceEntry save(PriceEntry newPriceEntry) {
-        Assert.notNull(newPriceEntry, "Product to save must not be null.");
-        log.debug("Saving Price Entry: {}", newPriceEntry);
-        return priceEntryRepository.save(newPriceEntry);
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<PriceEntry> getPriceEntriesForProductAndStore(Long productId, Long storeId, LocalDate startDate, LocalDate endDate) {
+        Assert.notNull(productId, "Product ID cannot be null.");
+        Assert.notNull(storeId, "Store ID cannot be null.");
+        Assert.notNull(startDate, "Start date cannot be null.");
+        Assert.notNull(endDate, "End date cannot be null.");
+        Assert.isTrue(!endDate.isBefore(startDate), "End date must not be before start date.");
+        return priceEntryRepository.findByProductIdAndStoreIdAndEntryDateBetweenOrderByEntryDateAsc(productId, storeId, startDate, endDate);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<PriceEntry> getPriceEntriesForProduct(Long productId, LocalDate startDate, LocalDate endDate) {
+        Assert.notNull(productId, "Product ID cannot be null.");
+        Assert.notNull(startDate, "Start date cannot be null.");
+        Assert.notNull(endDate, "End date cannot be null.");
+        Assert.isTrue(!endDate.isBefore(startDate), "End date must not be before start date.");
+        return priceEntryRepository.findByProductIdAndEntryDateBetweenOrderByEntryDateAsc(productId, startDate, endDate);
     }
 }

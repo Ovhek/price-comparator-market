@@ -1,12 +1,15 @@
 package com.alexcruceat.pricecomparatormarket.service;
 
+import com.alexcruceat.pricecomparatormarket.dto.ProductPriceHistoryDTO;
 import com.alexcruceat.pricecomparatormarket.model.Brand;
 import com.alexcruceat.pricecomparatormarket.model.Category;
 import com.alexcruceat.pricecomparatormarket.model.Product;
+import com.alexcruceat.pricecomparatormarket.model.Store;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 /**
@@ -71,4 +74,16 @@ public interface ProductService {
      * @param id The ID of the product to delete.
      */
     void deleteById(Long id);
+
+    /**
+     * Retrieves the price history for a specific product within an optional date range and for an optional store.
+     *
+     * @param product The Product for which to fetch history.
+     * @param store   Optional The Store to filter price history. If null, history from all stores is considered.
+     * @param startDate Optional start date for the history range (inclusive).
+     * @param endDate   Optional end date for the history range (inclusive).
+     * @return A {@link ProductPriceHistoryDTO} containing product details and its price points.
+     * @throws com.alexcruceat.pricecomparatormarket.exception.ResourceNotFoundException if the product with the given ID is not found.
+     */
+    ProductPriceHistoryDTO getProductPriceHistory(Product product, Optional<Store> store, Optional<LocalDate> startDate, Optional<LocalDate> endDate);
 }

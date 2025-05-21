@@ -51,6 +51,20 @@ public interface PriceEntryService {
      */
     List<PriceEntry> findByProductOrderByEntryDateDesc(Product product);
 
+    PriceEntry save(PriceEntry newPriceEntry);
+
+    /**
+     * Finds all price entries for a specific product within a store and given date range,
+     * ordered by entry date ascending.
+     *
+     * @param productId The ID of the product.
+     * @param storeId The ID of the Store.
+     * @param startDate The start date of the range (inclusive).
+     * @param endDate   The end date of the range (inclusive).
+     * @return A list of {@link PriceEntry} objects for the product within the date range.
+     */
+    List<PriceEntry> getPriceEntriesForProductAndStore(Long productId, Long storeId, LocalDate startDate, LocalDate endDate);
+
     /**
      * Finds all price entries for a specific product within a given date range,
      * ordered by entry date ascending.
@@ -60,9 +74,8 @@ public interface PriceEntryService {
      * @param endDate   The end date of the range (inclusive).
      * @return A list of {@link PriceEntry} objects for the product within the date range.
      */
-    List<PriceEntry> findProductPriceHistoryInRange(Long productId, LocalDate startDate, LocalDate endDate);
+    List<PriceEntry> getPriceEntriesForProduct(Long productId, LocalDate startDate, LocalDate endDate);
 
-    PriceEntry save(PriceEntry newPriceEntry);
 
 
 }

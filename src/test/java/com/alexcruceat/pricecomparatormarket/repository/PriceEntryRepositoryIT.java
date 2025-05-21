@@ -112,7 +112,7 @@ class PriceEntryRepositoryIT extends AbstractIntegrationTest {
         priceEntryRepository.saveAllAndFlush(List.of(entry1, entry2, entry3, entry4));
         entityManager.clear();
 
-        List<PriceEntry> history = priceEntryRepository.findProductPriceHistoryInRange(testProduct.getId(), startDate, endDate);
+        List<PriceEntry> history = priceEntryRepository.findByProductIdAndEntryDateBetweenOrderByEntryDateAsc(testProduct.getId(), startDate, endDate);
         assertThat(history).hasSize(3);
         assertThat(history).extracting(PriceEntry::getEntryDate).containsExactlyInAnyOrder(startDate, midDate, endDate);
         assertThat(history.get(0).getEntryDate()).isEqualTo(startDate); // Ordered by ASC
