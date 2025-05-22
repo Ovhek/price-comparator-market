@@ -201,4 +201,18 @@ public class PriceEntryServiceImpl implements PriceEntryService {
                 .findFirstByProductAndStoreAndPackageQuantityAndPackageUnitAndEntryDateLessThanEqualOrderByEntryDateDesc(
                         product, store, packageQuantity, packageUnit, referenceDate);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Optional<PriceEntry> findFirstByProductAndStoreAndEntryDateLessThanEqualOrderByEntryDateDesc(Product product, Store store, LocalDate date) {
+        Assert.notNull(product, "Product cannot be null.");
+        Assert.notNull(store, "Store cannot be null.");
+        Assert.notNull(date, "Date cannot be null.");
+
+        return priceEntryRepository.findFirstByProductAndStoreAndEntryDateLessThanEqualOrderByEntryDateDesc(
+                product, store, date
+        );
+    }
 }

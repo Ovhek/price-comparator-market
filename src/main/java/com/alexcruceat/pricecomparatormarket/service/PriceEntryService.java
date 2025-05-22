@@ -131,4 +131,18 @@ public interface PriceEntryService {
      */
     Optional<PriceEntry> findFirstByProductAndStoreAndPackageQuantityAndPackageUnitAndEntryDateLessThanEqualOrderByEntryDateDesc(@NotNull(message = "Product for discount cannot be null.") Product product, @NotNull(message = "Store for discount cannot be null.") Store store, @NotNull(message = "Discount package quantity cannot be null.") BigDecimal packageQuantity, @NotNull(message = "Discount package unit cannot be null.") UnitOfMeasure packageUnit, LocalDate referenceDate);
 
+    /**
+     * Finds the most recent {@link PriceEntry} for a given {@link Product} and {@link Store}
+     * where the entry date is less than or equal to the specified date.
+     *
+     * <p>This method ensures that all parameters are non-null and uses assertions to validate them.
+     *
+     * @param product the product to search for, must not be {@code null}
+     * @param store the store to search in, must not be {@code null}
+     * @param today the reference date, must not be {@code null}
+     * @return an {@link Optional} containing the most recent matching {@link PriceEntry},
+     *         or {@link Optional#empty()} if no match is found
+     * @throws IllegalArgumentException if any argument is {@code null}
+     */
+    Optional<PriceEntry> findFirstByProductAndStoreAndEntryDateLessThanEqualOrderByEntryDateDesc(Product product, Store store, LocalDate today);
 }
