@@ -21,12 +21,14 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import static com.alexcruceat.pricecomparatormarket.config.ApiConstants.*;
+
 /**
  * REST Controller for managing user price alerts.
  * Allows users to create, view, and deactivate their price alerts.
  */
 @RestController
-@RequestMapping("/api/v1/price-alerts")
+@RequestMapping(PRICE_ALERTS_ENDPOINT)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Price Alerts API", description = "Endpoints for managing user price alerts")
@@ -72,7 +74,7 @@ public class PriceAlertController {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             array = @ArraySchema(schema = @Schema(implementation = PriceAlertDTO.class))))
     })
-    @GetMapping("/user/{userId}/active")
+    @GetMapping(ALERTS_USER_ACTIVE_SUBPATH)
     public ResponseEntity<List<PriceAlertDTO>> getActiveUserAlerts(
             @Parameter(description = "ID of the user.", required = true, example = "user123")
             @PathVariable String userId) {
@@ -94,7 +96,7 @@ public class PriceAlertController {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             array = @ArraySchema(schema = @Schema(implementation = PriceAlertDTO.class))))
     })
-    @GetMapping("/user/{userId}")
+    @GetMapping(ALERTS_USER_SUBPATH)
     public ResponseEntity<List<PriceAlertDTO>> getAllUserAlerts(
             @Parameter(description = "ID of the user.", required = true, example = "user123")
             @PathVariable String userId) {
@@ -120,7 +122,7 @@ public class PriceAlertController {
             @ApiResponse(responseCode = "400", description = "Invalid request (e.g., user not authorized)."),
             @ApiResponse(responseCode = "404", description = "Price alert not found with the specified ID.")
     })
-    @PutMapping("/{alertId}/deactivate") // Using PUT for state change, could also be DELETE if it means permanent removal
+    @PutMapping(ALERTS_DEACTIVATE_SUBPATH) // Using PUT for state change, could also be DELETE if it means permanent removal
     public ResponseEntity<Void> deactivatePriceAlert(
             @Parameter(description = "ID of the price alert to deactivate.", required = true, example = "1")
             @PathVariable Long alertId,

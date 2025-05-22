@@ -27,11 +27,13 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.Optional;
 
+import static com.alexcruceat.pricecomparatormarket.config.ApiConstants.*;
+
 /**
  * REST Controller for accessing discount information.
  */
 @RestController
-@RequestMapping("/api/v1/discounts")
+@RequestMapping(DISCOUNTS_ENDPOINT)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Discounts API", description = "Endpoints for finding product discounts")
@@ -54,7 +56,7 @@ public class DiscountController {
     @ApiResponse(responseCode = "200", description = "Successfully retrieved list of best discounts.",
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                     schema = @Schema(implementation = PageResponseDTODiscountedProductWrapper.class)))
-    @GetMapping("/best")
+    @GetMapping(BEST_DISCOUNTS_SUBPATH)
     public ResponseEntity<PageResponseDTO<DiscountedProductDTO>> getBestActiveDiscounts(
             @Parameter(description = "Reference date to check for active discounts (yyyy-MM-dd). Defaults to today.")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Optional<LocalDate> referenceDateOptional,
@@ -87,7 +89,7 @@ public class DiscountController {
                             schema = @Schema(implementation = PageResponseDTODiscountedProductWrapper.class))),
             @ApiResponse(responseCode = "400", description = "Invalid request parameters (e.g., invalid date format).")
     })
-    @GetMapping("/new")
+    @GetMapping(NEW_DISCOUNTS_SUBPATH)
     public ResponseEntity<PageResponseDTO<DiscountedProductDTO>> getNewDiscounts(
             @Parameter(description = "Date from which to fetch new discounts (yyyy-MM-dd). Defaults to 24 hours ago.")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Optional<LocalDate> sinceDateOptional,

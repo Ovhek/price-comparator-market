@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.Optional;
 
+import static com.alexcruceat.pricecomparatormarket.config.ApiConstants.*;
+
 /**
  * REST controller for accessing price history and trends of products, categories, and brands.
  * <p>
@@ -27,7 +29,7 @@ import java.util.Optional;
  * </p>
  */
 @RestController
-@RequestMapping("/api/v1/price-history")
+@RequestMapping(PRICE_HISTORY_ENDPOINT)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Price History API", description = "Endpoints for retrieving product, category, or brand price trends and history.")
@@ -52,7 +54,7 @@ public class PriceHistoryController {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = PriceTrendResponseDTO.class)))
     })
-    @GetMapping("/product/{productId}")
+    @GetMapping(HISTORY_PRODUCT_SUBPATH)
     public ResponseEntity<PriceTrendResponseDTO> getIndividualProductPriceHistory(
             @Parameter(description = "ID of the product.", required = true, example = "1")
             @PathVariable Long productId,
@@ -83,7 +85,7 @@ public class PriceHistoryController {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = PriceTrendResponseDTO.class)))
     })
-    @GetMapping("/category/{categoryId}")
+    @GetMapping(HISTORY_CATEGORY_SUBPATH)
     public ResponseEntity<PriceTrendResponseDTO> getCategoryPriceTrend(
             @Parameter(description = "ID of the category.", required = true, example = "1")
             @PathVariable Long categoryId,
@@ -116,7 +118,7 @@ public class PriceHistoryController {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = PriceTrendResponseDTO.class)))
     })
-    @GetMapping("/brand/{brandId}")
+    @GetMapping(HISTORY_BRAND_SUBPATH)
     public ResponseEntity<PriceTrendResponseDTO> getBrandPriceTrend(
             @Parameter(description = "ID of the brand.", required = true, example = "5")
             @PathVariable Long brandId,

@@ -30,13 +30,15 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.Optional;
 
+import static com.alexcruceat.pricecomparatormarket.config.ApiConstants.*;
+
 /**
  * REST Controller for querying product information.
  * Provides endpoints for listing products with filtering, pagination, and sorting,
  * as well as retrieving details for a single product.
  */
 @RestController
-@RequestMapping("/api/v1/products")
+@RequestMapping(PRODUCTS_ENDPOINT)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Products API", description = "Endpoints for accessing product information")
@@ -115,7 +117,7 @@ public class ProductController {
     @ApiResponse(responseCode = "404", description = "Product not found with the specified ID.",
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                     schema = @Schema(implementation = com.alexcruceat.pricecomparatormarket.exception.GlobalApiExceptionHandler.ErrorResponse.class)))
-    @GetMapping("/{id}")
+    @GetMapping(PRODUCT_ID_PATH_VARIABLE)
     public ResponseEntity<ProductDTO> getProductById(
             @Parameter(description = "Unique ID of the product to retrieve.", required = true, example = "1")
             @PathVariable Long id) {
@@ -150,7 +152,7 @@ public class ProductController {
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                     schema = @Schema(implementation = PageResponseDTOProductValueWrapper.class)))
     @ApiResponse(responseCode = "400", description = "Invalid request parameters.")
-    @GetMapping("/value-analysis")
+    @GetMapping(VALUE_ANALYSIS_SUBPATH)
     public ResponseEntity<PageResponseDTO<ProductValueDTO>> listProductsWithValueAnalysis(
             @Parameter(description = "Filter by product name (partial, case-insensitive match).")
             @RequestParam(required = false) String name,

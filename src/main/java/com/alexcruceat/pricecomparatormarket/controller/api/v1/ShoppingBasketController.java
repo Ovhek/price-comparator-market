@@ -18,11 +18,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static com.alexcruceat.pricecomparatormarket.config.ApiConstants.*;
+
 /**
  * REST Controller for shopping basket operations, primarily for optimization.
  */
 @RestController
-@RequestMapping("/api/v1/shopping-baskets")
+@RequestMapping(SHOPPING_BASKETS_ENDPOINT)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Shopping Basket API", description = "Endpoints for shopping basket optimization")
@@ -47,7 +49,7 @@ public class ShoppingBasketController {
     @ApiResponse(responseCode = "400", description = "Invalid basket request (e.g., empty items, invalid product IDs).",
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                     schema = @Schema(implementation = com.alexcruceat.pricecomparatormarket.exception.GlobalApiExceptionHandler.ErrorResponse.class)))
-    @PostMapping("/optimize")
+    @PostMapping(BASKETS_OPTIMIZE_SUBPATH)
     public ResponseEntity<BasketOptimizationResponseDTO> optimizeBasket(
             @Valid @RequestBody ShoppingBasketRequestDTO basketRequest) {
         log.info("Received request to optimize shopping basket for userId: {}", basketRequest.getUserId());

@@ -8,8 +8,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static com.alexcruceat.pricecomparatormarket.config.ApiConstants.HEALTH_ENDPOINT;
+
 @RestController
-@RequestMapping("/api/v1/health")
+@RequestMapping(HEALTH_ENDPOINT)
 @Tag(name = "Health Check", description = "API for checking application health status")
 public class HealthCheckController {
 
