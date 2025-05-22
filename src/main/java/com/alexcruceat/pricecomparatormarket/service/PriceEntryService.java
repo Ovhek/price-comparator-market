@@ -3,6 +3,7 @@ import com.alexcruceat.pricecomparatormarket.model.PriceEntry;
 import com.alexcruceat.pricecomparatormarket.model.Product;
 import com.alexcruceat.pricecomparatormarket.model.Store;
 import com.alexcruceat.pricecomparatormarket.model.UnitOfMeasure;
+import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -115,5 +116,19 @@ public interface PriceEntryService {
      * @return Optional containing the most recent {@link PriceEntry} or empty if none found.
      */
     Optional<PriceEntry> findFirstByProductAndEntryDateLessThanEqualOrderByEntryDateDesc(Product product, LocalDate referenceDate);
+
+    /**
+     * Retrieves the most recent price entry for a given product and store that matches the
+     * specified package quantity and unit, where the entry date is less than or equal to
+     * the given reference date.
+     *
+     * @param product         the product for which the price is being queried (must not be null)
+     * @param store           the store for which the price is being queried (must not be null)
+     * @param packageQuantity the quantity of the product's package (must not be null)
+     * @param packageUnit     the unit of measure for the package (must not be null)
+     * @param referenceDate   the latest acceptable entry date
+     * @return an {@code Optional<PriceEntry>} containing the most recent applicable price entry, if available
+     */
+    Optional<PriceEntry> findFirstByProductAndStoreAndPackageQuantityAndPackageUnitAndEntryDateLessThanEqualOrderByEntryDateDesc(@NotNull(message = "Product for discount cannot be null.") Product product, @NotNull(message = "Store for discount cannot be null.") Store store, @NotNull(message = "Discount package quantity cannot be null.") BigDecimal packageQuantity, @NotNull(message = "Discount package unit cannot be null.") UnitOfMeasure packageUnit, LocalDate referenceDate);
 
 }

@@ -95,4 +95,19 @@ public interface DiscountRepository extends JpaRepository<Discount, Long> {
      */
     @Query("SELECT d FROM Discount d WHERE :date BETWEEN d.fromDate AND d.toDate ORDER BY d.percentage DESC, d.product.name ASC")
     Page<Discount> findTopActiveDiscounts(@Param("date") LocalDate date, Pageable pageable);
+
+    /**
+     * Retrieves all discounts for a given product and store that match the specified
+     * package quantity and unit, and are valid within the given date range.
+     *
+     * @param product         the product to which the discount applies
+     * @param store           the store where the discount is available
+     * @param packageQuantity the quantity of the product's package
+     * @param packageUnit     the unit of measure for the package quantity
+     * @param referenceDate   the date to check if it is on or after the discount's start date
+     * @param referenceDate1  the date to check if it is on or before the discount's end date
+     * @return a list of discounts matching the criteria
+     */
+    List<Discount> findAllByProductAndStoreAndPackageQuantityAndPackageUnitAndFromDateLessThanEqualAndToDateGreaterThanEqual(Product product, Store store, BigDecimal packageQuantity, UnitOfMeasure packageUnit, LocalDate referenceDate, LocalDate referenceDate1);
+
 }

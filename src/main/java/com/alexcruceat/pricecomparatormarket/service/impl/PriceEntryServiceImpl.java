@@ -186,4 +186,19 @@ public class PriceEntryServiceImpl implements PriceEntryService {
         Assert.notNull(referenceDate, "Reference date cannot be null.");
         return priceEntryRepository.findFirstByProductAndEntryDateLessThanEqualOrderByEntryDateDesc(product, referenceDate);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Optional<PriceEntry> findFirstByProductAndStoreAndPackageQuantityAndPackageUnitAndEntryDateLessThanEqualOrderByEntryDateDesc(Product product, Store store, BigDecimal packageQuantity, UnitOfMeasure packageUnit, LocalDate referenceDate) {
+        Assert.notNull(product, "Product for discount cannot be null.");
+        Assert.notNull(store, "Store for discount cannot be null.");
+        Assert.notNull(packageQuantity, "Discount package quantity cannot be null.");
+        Assert.notNull(packageUnit, "Discount package unit cannot be null.");
+
+        return priceEntryRepository
+                .findFirstByProductAndStoreAndPackageQuantityAndPackageUnitAndEntryDateLessThanEqualOrderByEntryDateDesc(
+                        product, store, packageQuantity, packageUnit, referenceDate);
+    }
 }

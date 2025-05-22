@@ -3,6 +3,7 @@ package com.alexcruceat.pricecomparatormarket.service;
 
 import com.alexcruceat.pricecomparatormarket.dto.DiscountedProductDTO;
 import com.alexcruceat.pricecomparatormarket.model.*;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -112,4 +113,22 @@ public interface DiscountService {
     Page<DiscountedProductDTO> findNewlyAddedDiscounts(LocalDate sinceDate, LocalDate referenceDateForPrices, Pageable pageable);
 
     Discount save(Discount discount);
+
+    /**
+     * Finds all active discounts for a specific product, at a specific store,
+     * matching specific package details, on a given reference date.
+     *
+     * @param product         The product.
+     * @param store           The store.
+     * @param packageQuantity The package quantity of the product.
+     * @param packageUnit     The package unit of the product.
+     * @param date            The date to check for active discounts.
+     * @return A list of active {@link Discount}s matching the criteria.
+     */
+    List<Discount> findActiveDiscountsByProductStoreAndPackage(
+            Product product,
+            @NotNull(message = "Store for price entry cannot be null.") Store store,
+            @NotNull(message = "Package quantity cannot be null.") BigDecimal packageQuantity,
+            @NotNull(message = "Package unit cannot be null.") UnitOfMeasure packageUnit,
+            LocalDate date);
 }

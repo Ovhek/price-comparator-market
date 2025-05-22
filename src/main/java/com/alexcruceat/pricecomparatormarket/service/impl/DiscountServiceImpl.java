@@ -5,8 +5,8 @@ import com.alexcruceat.pricecomparatormarket.mapper.ProductMapper;
 import com.alexcruceat.pricecomparatormarket.mapper.StoreMapper;
 import com.alexcruceat.pricecomparatormarket.model.*;
 import com.alexcruceat.pricecomparatormarket.repository.DiscountRepository;
-import com.alexcruceat.pricecomparatormarket.repository.PriceEntryRepository;
 import com.alexcruceat.pricecomparatormarket.service.DiscountService;
+import com.alexcruceat.pricecomparatormarket.service.PriceEntryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
@@ -31,7 +31,7 @@ import java.util.Optional;
 public class DiscountServiceImpl implements DiscountService {
 
     private final DiscountRepository discountRepository;
-    private final PriceEntryRepository priceEntryRepository;
+    private final PriceEntryService priceEntryService;
 
     private final ProductMapper productMapper;
     private final StoreMapper storeMapper;
@@ -188,7 +188,7 @@ public class DiscountServiceImpl implements DiscountService {
             // on or before the discount's fromDate (or referenceDate, depending on definition of "original price").
             // Let's assume "original price" is the latest available price for that item at that store.
             // We need to match on product, store, packageQuantity, and packageUnit.
-            Optional<PriceEntry> priceEntryOpt = priceEntryRepository
+            Optional<PriceEntry> priceEntryOpt = priceEntryService
                     .findFirstByProductAndStoreAndPackageQuantityAndPackageUnitAndEntryDateLessThanEqualOrderByEntryDateDesc(
                             discount.getProduct(),
                             discount.getStore(),
@@ -262,7 +262,7 @@ public class DiscountServiceImpl implements DiscountService {
         for (Discount discount : newDiscountsPage.getContent()) {
             // 2. For each new discount, find its original price to calculate the discounted price.
             // Use referenceDateForPrices to get the relevant original price.
-            Optional<PriceEntry> priceEntryOpt = priceEntryRepository
+            Optional<PriceEntry> priceEntryOpt = priceEntryService
                     .findFirstByProductAndStoreAndPackageQuantityAndPackageUnitAndEntryDateLessThanEqualOrderByEntryDateDesc(
                             discount.getProduct(),
                             discount.getStore(),
@@ -302,9 +302,29 @@ public class DiscountServiceImpl implements DiscountService {
      * {@inheritDoc}
      */
     @Override
+    @Transactional(readOnly = true)
+    public List<Discount> findActiveDiscountsByProductStoreAndPackage(
+            Product product, Store store, BigDecimal packageQuantity, UnitOfMeasure packageUnit, LocalDate referenceDate) {
+        Assert.notNull(product, "Product cannot be null.");
+        Assert.notNull(store, "Store cannot be null.");
+        Assert.notNull(packageQuantity, "Package quantity cannot be null.");
+        Assert.notNull(packageUnit, "Package unit cannot be null.");
+        Assert.notNull(referenceDate, "Reference date cannot be null.");
+
+        // This query needs to be precise. The Discount entity stores its own packageQuantity and packageUnit.
+        return discountRepository.findAllByProductAndStoreAndPackageQuantityAndPackageUnitAndFromDateLessThanEqualAndToDateGreaterThanEqual(
+                product, store, packageQuantity, packageUnit, referenceDate, referenceDate
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Discount save(Discount discount) {
         Assert.notNull(discount, "Discount to save must not be null.");
         log.debug("Saving Discount: {}", discount);
         return discountRepository.save(discount);
     }
+
 }
